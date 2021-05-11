@@ -1,11 +1,14 @@
 package jcsp.lang;
 
 /**
- * Guard you can turn on and off.
+ * Guard you can turn on and off.  I suspect I wrote this class without realizing
+ * the existence of (Alternative).priSelect(boolean[] preCondition), which makes
+ * this class redundant.
  * 
  * @author erhannis
  *
  */
+@Deprecated
 public class BooleanGuard extends Guard
 {
    private boolean ready = false;

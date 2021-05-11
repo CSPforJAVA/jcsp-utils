@@ -1,4 +1,4 @@
-package jcsp.utils;
+package jcsp.helpers;
 
 import java.util.function.Consumer;
 

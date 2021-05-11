@@ -1,4 +1,4 @@
-package jcsp.utils;
+package jcsp.helpers;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -239,23 +239,45 @@ public class JcspUtils
       }
    }
 
+   /**
+    * This wraps the channel in a layer that monitors for deadlock.<br/>
+    * 1. If a call to `.write(T)` on the underlying channel blocks for more than 10 seconds, a watchdog process (a static singleton, shared across all calls to `logDeadlock`) prints "Deadlock detected!" and the stack trace of the call that blocked.<br/>
+    * 2. If a call presumed deadlocked subsequently completes, the following is logged: "Nevermind; the following wasn't actually a deadlock.  Stopped for {time}ms".<br/>
+    * 3. Note: wrapping a channel like this is somewhat expensive.  Every message sent causes an exception and stack trace to be preemptively created, and two extra channel calls made to the single coordinating process.  However - in practice it's useful enough, and fast enough, that I've left it all over production code with no apparent problem.<br/>
+    * @param <T>
+    * @param out
+    * @return wrapped ChannelOutput
+    */
    public static <T> ChannelOutput<T> logDeadlock( final ChannelOutput<T> out )
    {
       return new DeadlockLogger.DeadlockLoggingChannelOutput<T>(out);
    }
 
+   /**
+    * See {@link #logDeadlock(jcsp.lang.ChannelOutput)}
+    * @param out
+    * @return 
+    */
    public static ChannelOutputInt logDeadlock( final ChannelOutputInt out )
    {
       return new DeadlockLogger.DeadlockLoggingChannelOutputInt(out);
    }
 
    /**
-    * Spawns a task with one channel out.
+    * Spawns a task with one channel out.  Like so:<br/>
+    * <br/>
+    * <pre>
+    *  AltingChannelInput&lt;String&gt; in = JcspUtils.spawn(out -&gt; {
+    *      out.write("line 1");
+    *      out.write("line 2");
+    *      out.write("line 3");
+    *  });
+    * </pre>
     *
     * //TODO Should this be in a particular class?
     * 
     * @param task
-    * @return
+    * @return AltingChannelInput receiving the data the spawned task is emitting.
     */
    public static <T> AltingChannelInput<T> spawn( final Consumer<ChannelOutput<T>> task )
    {

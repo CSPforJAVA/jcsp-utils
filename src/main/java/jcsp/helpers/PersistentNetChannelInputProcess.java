@@ -1,4 +1,4 @@
-package jcsp.utils;
+package jcsp.helpers;
 
 import jcsp.lang.AltingChannelInput;
 import jcsp.lang.CSProcess;

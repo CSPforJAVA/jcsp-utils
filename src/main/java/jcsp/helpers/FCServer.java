@@ -1,4 +1,4 @@
-package jcsp.utils;
+package jcsp.helpers;
 
 /**
  * 
@@ -7,7 +7,7 @@ package jcsp.utils;
  * @param <T>
  * @param <U>
  * 
- * @see jcsp.utils.FunctionChannel
+ * @see jcsp.helpers.FunctionChannel
  */
 public interface FCServer<T, U>
 {
