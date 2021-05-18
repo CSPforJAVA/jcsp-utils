@@ -16,6 +16,7 @@ jcsp.helpers
   3. AltingChannelInput<T> spawn(Consumer<ChannelOutput<T>>) - for quickly making a producer of stuff.
   4. vent(AltingChannelInput) - sends the channel to a process that forever pulls and discards any items arriving on any of its channels.  The idea is if you want to kill a receiver without blocking processes that send to it, you vent the receiver's channels.  There may be more idiomatic ways of dealing with this situation, but...here this is.
   5. ChannelOutput<T> buffer(ChannelOutput<T> target, ChannelDataStore<T> buffer) - wraps a target channel with a buffered channel.  Warning: starts a process to do so, and currently there's no provided way to kill it.  Beware thread clutter.
+  6. <T> AltingChannelInput<T> antidote(AltingChannelInput<T>) and its kin - wraps a channel in another that swallows PoisonExceptions.
 
 Install to local Maven with `mvn clean install`.
 

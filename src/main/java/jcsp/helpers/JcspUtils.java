@@ -8,17 +8,25 @@ import java.util.Map.Entry;
 import java.util.function.Consumer;
 
 import jcsp.lang.Alternative;
+import jcsp.lang.AltingAntidoteChannelInput;
+import jcsp.lang.AltingAntidoteChannelInputInt;
 import jcsp.lang.AltingChannelInput;
 import jcsp.lang.AltingChannelInputInt;
+import jcsp.lang.AntidoteChannelInput;
+import jcsp.lang.AntidoteChannelInputInt;
+import jcsp.lang.AntidoteChannelOutput;
+import jcsp.lang.AntidoteChannelOutputInt;
 import jcsp.lang.Any2AnyChannel;
 import jcsp.lang.Any2OneChannel;
 import jcsp.lang.CSProcess;
 import jcsp.lang.Channel;
 import jcsp.lang.ChannelInput;
+import jcsp.lang.ChannelInputInt;
 import jcsp.lang.ChannelOutput;
 import jcsp.lang.ChannelOutputInt;
 import jcsp.lang.DisableableTimer;
 import jcsp.lang.Guard;
+import jcsp.lang.PoisonException;
 import jcsp.lang.ProcessManager;
 import jcsp.util.ChannelDataStore;
 
@@ -262,7 +270,78 @@ public class JcspUtils
    {
       return new DeadlockLogger.DeadlockLoggingChannelOutputInt(out);
    }
+   
+   /**
+    * Wraps `out` in a channel that swallows PoisonExceptions.
+    * 
+    * @param <T>
+    * @param out
+    * @return 
+    */
+   public static <T> ChannelOutput<T> antidote( final ChannelOutput<T> out )
+   {
+      return new AntidoteChannelOutput<T>(out);
+   }
 
+   /**
+    * See {@link #antidote(jcsp.lang.ChannelOutput)}
+    * @param out
+    * @return 
+    */
+   public static ChannelOutputInt antidote( final ChannelOutputInt out )
+   {
+      return new AntidoteChannelOutputInt(out);
+   }
+
+   //TODO AltingChannelOutput?
+   
+   /**
+    * Wraps an AltingChannelInput, and if any method throws a PoisonException, it
+    * basically pretends nothing happened.  The only difference is that if `read`
+    * or `startRead` are called, they return null. //TODO Should they block, instead?
+    * 
+    * @param <T>
+    * @param in
+    * @return 
+    */
+   public static <T> AltingChannelInput<T> antidote( final AltingChannelInput<T> in )
+   {
+      return new AltingAntidoteChannelInput<T>(in);
+   }
+
+   /**
+    * Wraps an AltingChannelInputInt, and if any method throws a PoisonException, it
+    * basically pretends nothing happened.  The only difference is that if `read`
+    * or `startRead` are called, they return 0. //TODO Should they block, instead?
+    * 
+    * @param in
+    * @return 
+    */
+   public static AltingChannelInputInt antidote( final AltingChannelInputInt in )
+   {
+      return new AltingAntidoteChannelInputInt(in);
+   }
+
+   /**
+    * See {@link #antidote(jcsp.lang.AltingChannelInput)}
+    * @param in
+    * @return 
+    */
+   public static <T> ChannelInput<T> antidote( final ChannelInput<T> in )
+   {
+      return new AntidoteChannelInput<T>(in);
+   }
+
+   /**
+    * See {@link #antidote(jcsp.lang.AltingChannelInputInt)}
+    * @param in
+    * @return 
+    */
+   public static ChannelInputInt antidote( final ChannelInputInt in )
+   {
+      return new AntidoteChannelInputInt(in);
+   }
+   
    /**
     * Spawns a task with one channel out.  Like so:<br/>
     * <br/>
