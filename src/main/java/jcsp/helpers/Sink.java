@@ -11,11 +11,14 @@ import jcsp.lang.ProcessManager;
 import jcsp.lang.SharedChannelOutput;
 
 /**
- * Reads a value, synchronously calls the callback, repeat.
+ * Reads a value, calls the callback, repeat.
  * 
  * More convenient than manually creating an internal channel and starting a new
- * process
- * and linking the two.
+ * process and linking the two.
+ * 
+ * If `extendedRendezvous` (true by default), doesn't create a separate process - 
+ * just calls the callback inline on `write`.  If false, DOES create a separate
+ * process - beware thread pileup.
  * 
  * @author erhannis
  *
@@ -42,7 +45,9 @@ public class Sink<T> implements ChannelOutput<T>
       this.internalOut = internalChannel.out();
       this.extendedRendezvous = extendedRendezvous;
 
-      new ProcessManager(new SinkProcess()).start();
+      if (!extendedRendezvous) {
+         new ProcessManager(new SinkProcess()).start();
+      }
    }
 
    /**
@@ -54,29 +59,21 @@ public class Sink<T> implements ChannelOutput<T>
 
    public void write(T object)
    {
-      internalOut.write(object);
+      if (extendedRendezvous) {
+         callback.accept(object);
+      } else {
+         internalOut.write(object);
+      }
    }
 
    public class SinkProcess implements CSProcess
    {
       public void run()
       {
-         if (extendedRendezvous)
+         while (true)
          {
-            while (true)
-            {
-               T t = internalIn.startRead();
-               callback.accept(t);
-               internalIn.endRead();
-            }
-         }
-         else
-         {
-            while (true)
-            {
-               T t = internalIn.read();
-               callback.accept(t);
-            }
+            T t = internalIn.read();
+            callback.accept(t);
          }
       }
    }

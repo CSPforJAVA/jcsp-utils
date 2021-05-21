@@ -13,10 +13,13 @@ jcsp.helpers
       I. If a call to `.write(T)` on the underlying channel blocks for more than 10 seconds, a watchdog process (a static singleton, shared across all calls to `logDeadlock`) prints "Deadlock detected!" and the stack trace of the call that blocked.
       II. If a call presumed deadlocked subsequently completes, the following is logged: "Nevermind; the following wasn't actually a deadlock.  Stopped for {time}ms".
       III.  Note: wrapping a channel like this is somewhat expensive.  Every message sent causes an exception and stack trace to be preemptively created, and two extra channel calls made to the single coordinating process.  However - in practice it's useful enough, and fast enough, that I've left it all over production code with no apparent problem.
-  3. AltingChannelInput<T> spawn(Consumer<ChannelOutput<T>>) - for quickly making a producer of stuff.
-  4. vent(AltingChannelInput) - sends the channel to a process that forever pulls and discards any items arriving on any of its channels.  The idea is if you want to kill a receiver without blocking processes that send to it, you vent the receiver's channels.  There may be more idiomatic ways of dealing with this situation, but...here this is.
-  5. ChannelOutput<T> buffer(ChannelOutput<T> target, ChannelDataStore<T> buffer) - wraps a target channel with a buffered channel.  Warning: starts a process to do so, and currently there's no provided way to kill it.  Beware thread clutter.
-  6. <T> AltingChannelInput<T> antidote(AltingChannelInput<T>) and its kin - wraps a channel in another that swallows PoisonExceptions.
+    c. AltingChannelInput<T> spawn(Consumer<ChannelOutput<T>>) - for quickly making a producer of stuff.
+    d. vent(AltingChannelInput) - sends the channel to a process that forever pulls and discards any items arriving on any of its channels.  The idea is if you want to kill a receiver without blocking processes that send to it, you vent the receiver's channels.  There may be more idiomatic ways of dealing with this situation, but...here this is.
+    e. ChannelOutput<T> buffer(ChannelOutput<T> target, ChannelDataStore<T> buffer) - wraps a target channel with a buffered channel.  Warning: starts a process to do so, and currently there's no provided way to kill it.  Beware thread clutter.
+    f. <T> AltingChannelInput<T> antidote(AltingChannelInput<T>) and its kin - wraps a channel in another that swallows PoisonExceptions.
+  3. Persistent Net Channels - The existing Net channels died too easily and stayed dead.  These ones attempt to reconnect, forever.  (At least, the Output does.  I'm not sure if the Input needs to?)
+  4. Sink<T> - Kinda like the opposite of `spawn`; this is a ChannelOutput that wraps a Consumer<T>.  If !extendedRendezvous, it spawns a process to run the callback, otherwise it just runs the callback in `write`.
+  5. SynchronoutSplitter - For conclusively notifying many things of the same data.  Wraps an Input, and you `.register()` for a copy Input.  The SynchronousSplitter, on `.startRead()`, copies the input to all corresponding Outputs in parallel, and once all have finished, `.endRead()`.
 
 Install to local Maven with `mvn clean install`.
 
