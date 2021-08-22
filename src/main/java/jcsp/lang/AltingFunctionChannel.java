@@ -1,7 +1,13 @@
-package jcsp.helpers;
+package jcsp.lang;
 
+import jcsp.helpers.FCClient;
+import jcsp.helpers.FCServer;
+import jcsp.lang.Alternative;
+import jcsp.lang.AltingChannelInput;
 import jcsp.lang.Any2AnyChannel;
+import jcsp.lang.Any2OneChannel;
 import jcsp.lang.Channel;
+import jcsp.lang.Guard;
 import jcsp.lang.SharedChannelInput;
 import jcsp.lang.SharedChannelOutput;
 
@@ -18,25 +24,34 @@ import jcsp.lang.SharedChannelOutput;
  * String result = complicatedProcessing(request);<br/>
  * fc.endRead(result);<br/>
  * <br/>
- * Uses two Any2AnyChannel, internally. I haven't thought through what would
- * happen if many processes used it at once - it might even be fine.
+ * Uses two Any2OneChannel, internally.
  * 
  * @author erhannis
  *
  * @param <T>
  * @param <U>
  */
-public class FunctionChannel<T, U> implements FCServer<T, U>, FCClient<T, U>
+public class AltingFunctionChannel<T, U> extends AltingFCServer<T, U> implements FCClient<T, U>
 {
-   private final SharedChannelInput<T> requestChannelIn;
+   private final AltingChannelInput<T> requestChannelIn;
    private final SharedChannelOutput<T> requestChannelOut;
    private final SharedChannelInput<U> responseChannelIn;
    private final SharedChannelOutput<U> responseChannelOut;
 
-   public FunctionChannel()
+   public AltingFunctionChannel()
    {
-      Any2AnyChannel<T> requestChannel = Channel.any2any();
+      Any2OneChannel<T> requestChannel = Channel.any2one();
       Any2AnyChannel<U> responseChannel = Channel.any2any();
+      requestChannelIn = requestChannel.in();
+      requestChannelOut = requestChannel.out();
+      responseChannelIn = responseChannel.in();
+      responseChannelOut = responseChannel.out();
+   }
+
+   public AltingFunctionChannel(int immunity)
+   {
+      Any2OneChannel<T> requestChannel = Channel.any2one(immunity);
+      Any2AnyChannel<U> responseChannel = Channel.any2any(immunity);
       requestChannelIn = requestChannel.in();
       requestChannelOut = requestChannel.out();
       responseChannelIn = responseChannel.in();
@@ -59,13 +74,31 @@ public class FunctionChannel<T, U> implements FCServer<T, U>, FCClient<T, U>
       responseChannelOut.write(u);
    }
 
-   public FCServer<T, U> getServer()
+   public AltingFCServer<T, U> getServer()
    {
       return this;
    }
 
-   public FCServer<T, U> getClient()
+   public FCClient<T, U> getClient()
    {
       return this;
    }
+   
+   public void poison(int strength)
+   {
+      requestChannelIn.poison(strength);
+      requestChannelOut.poison(strength);
+      responseChannelIn.poison(strength);
+      responseChannelOut.poison(strength);
+   }
+
+    @Override
+    boolean enable(Alternative alt) {
+        return requestChannelIn.enable(alt);
+    }
+
+    @Override
+    boolean disable() {
+        return requestChannelIn.disable();
+    }
 }

@@ -19,7 +19,8 @@ jcsp.helpers
     f. <T> AltingChannelInput<T> antidote(AltingChannelInput<T>) and its kin - wraps a channel in another that swallows PoisonExceptions.
   3. Persistent Net Channels - The existing Net channels died too easily and stayed dead.  These ones attempt to reconnect, forever.  (At least, the Output does.  I'm not sure if the Input needs to?)
   4. Sink<T> - Kinda like the opposite of `spawn`; this is a ChannelOutput that wraps a Consumer<T>.  If !extendedRendezvous, it spawns a process to run the callback, otherwise it just runs the callback in `write`.
-  5. SynchronoutSplitter - For conclusively notifying many things of the same data.  Wraps an Input, and you `.register()` for a copy Input.  The SynchronousSplitter, on `.startRead()`, copies the input to all corresponding Outputs in parallel, and once all have finished, `.endRead()`.
+  5. SynchronousSplitter - For conclusively notifying many things of the same data.  Wraps an Input, and you `.register()` for a copy Input.  The SynchronousSplitter, on `.startRead()`, copies the input to all corresponding Outputs in parallel, and once all have finished, `.endRead()`.
+  6. CacheProcess is derived from SynchronousSplitter.  It works the same, but keeps a copy of the value around for later fetching by .get() or .getFC.call(null) .
 
 Install to local Maven with `mvn clean install`.
 
