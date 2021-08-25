@@ -14,6 +14,7 @@ import jcsp.lang.One2OneChannel;
 import jcsp.lang.Parallel;
 import jcsp.lang.PoisonException;
 import jcsp.plugNplay.ProcessWrite;
+import jcsp.util.ChannelDataStore;
 
 /**
  * Writes from `in` to all registered out channels. Outputs are written in
@@ -64,6 +65,14 @@ public class SynchronousSplitter<T> implements CSProcess, ChannelOutput<T> {
     public SynchronousSplitter(int immunity, AltingChannelInput<T> in) {
         this(immunity);
         this.ins.add(in);
+    }
+
+    public AltingChannelInput<T> register(ChannelDataStore<T> buffer) {
+        //TODO Simply throw exception if already poisoned?
+        One2OneChannel<T> newChannel = (immunity != null ? Channel.<T>one2one(buffer, immunity) : Channel.<T>one2one(buffer));
+        AltingChannelInput<T> newIn = newChannel.in();
+        this.register(newChannel.out());
+        return newIn;
     }
 
     public AltingChannelInput<T> register() {
