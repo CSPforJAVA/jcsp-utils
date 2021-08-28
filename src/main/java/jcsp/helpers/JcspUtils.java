@@ -39,6 +39,81 @@ import jcsp.util.ChannelDataStore;
  */
 public class JcspUtils {
 
+        public static class DeadlockLoggingChannelOutput<T> implements ChannelOutput<T> {
+
+            private final ChannelOutput<T> out;
+
+            public DeadlockLoggingChannelOutput(ChannelOutput<T> out) {
+                this.out = out;
+            }
+
+            public void poison(int strength) {
+                out.poison(strength);
+            }
+
+            public void write(T object) {
+                write(object, null);
+            }
+            
+            public void write(T object, String tag) {
+                DeadlockLogger.DeadlockTag tag0;
+                try {
+                    // TODO This may be kinda heavy.
+                    if (tag != null) {
+                        throw new RuntimeException("Deadlock detected! " + tag);
+                    } else {
+                        throw new RuntimeException("Deadlock detected!");
+                    }
+                } catch (Exception e) {
+                    tag0 = new DeadlockLogger.DeadlockTag(e);
+                }
+                DeadlockLogger.startOut.write(tag0);
+                try {
+                    out.write(object);
+                } finally {
+                    DeadlockLogger.stopOut.write(tag0);
+                }
+            }
+
+        }
+
+        public static class DeadlockLoggingChannelOutputInt implements ChannelOutputInt {
+
+            private final ChannelOutputInt out;
+
+            public DeadlockLoggingChannelOutputInt(ChannelOutputInt out) {
+                this.out = out;
+            }
+
+            public void poison(int strength) {
+                out.poison(strength);
+            }
+
+            public void write(int value) {
+                write(value, null);
+            }
+            
+            public void write(int value, String tag) {
+                DeadlockLogger.DeadlockTag tag0;
+                try {
+                    // TODO This may be kinda heavy.
+                    if (tag != null) {
+                        throw new RuntimeException("Deadlock detected! " + tag);
+                    } else {
+                        throw new RuntimeException("Deadlock detected!");
+                    }
+                } catch (Exception e) {
+                    tag0 = new DeadlockLogger.DeadlockTag(e);
+                }
+                DeadlockLogger.startOut.write(tag0);
+                try {
+                    out.write(value);
+                } finally {
+                    DeadlockLogger.stopOut.write(tag0);
+                }
+            }
+
+        }    
     /**
      * Yeah, this is really weirdly nested. I know. Also, it's kindof a
      * singleton, but it's to be used specifically for debugging, so I'm less
@@ -71,60 +146,6 @@ public class JcspUtils {
             public DeadlockTag(Exception exception) {
                 this.exception = exception;
             }
-        }
-
-        private static class DeadlockLoggingChannelOutput<T> implements ChannelOutput<T> {
-
-            private final ChannelOutput<T> out;
-
-            public DeadlockLoggingChannelOutput(ChannelOutput<T> out) {
-                this.out = out;
-            }
-
-            public void poison(int strength) {
-                out.poison(strength);
-            }
-
-            public void write(T object) {
-                DeadlockTag tag;
-                try {
-                    // TODO This may be kinda heavy.
-                    throw new RuntimeException("Deadlock detected!");
-                } catch (Exception e) {
-                    tag = new DeadlockTag(e);
-                }
-                startOut.write(tag);
-                out.write(object);
-                stopOut.write(tag);
-            }
-
-        }
-
-        private static class DeadlockLoggingChannelOutputInt implements ChannelOutputInt {
-
-            private final ChannelOutputInt out;
-
-            public DeadlockLoggingChannelOutputInt(ChannelOutputInt out) {
-                this.out = out;
-            }
-
-            public void poison(int strength) {
-                out.poison(strength);
-            }
-
-            public void write(int value) {
-                DeadlockTag tag;
-                try {
-                    // TODO This may be kinda heavy.
-                    throw new RuntimeException("Deadlock detected!");
-                } catch (Exception e) {
-                    tag = new DeadlockTag(e);
-                }
-                startOut.write(tag);
-                out.write(value);
-                stopOut.write(tag);
-            }
-
         }
 
         private static final int DEADLOCK_TIMEOUT = 10000;
@@ -237,8 +258,8 @@ public class JcspUtils {
      * @param out
      * @return wrapped ChannelOutput
      */
-    public static <T> ChannelOutput<T> logDeadlock(final ChannelOutput<T> out) {
-        return new DeadlockLogger.DeadlockLoggingChannelOutput<T>(out);
+    public static <T> DeadlockLoggingChannelOutput<T> logDeadlock(final ChannelOutput<T> out) {
+        return new DeadlockLoggingChannelOutput<T>(out);
     }
 
     /**
@@ -247,8 +268,8 @@ public class JcspUtils {
      * @param out
      * @return
      */
-    public static ChannelOutputInt logDeadlock(final ChannelOutputInt out) {
-        return new DeadlockLogger.DeadlockLoggingChannelOutputInt(out);
+    public static DeadlockLoggingChannelOutputInt logDeadlock(final ChannelOutputInt out) {
+        return new DeadlockLoggingChannelOutputInt(out);
     }
 
     public static void logDeadlock(Runnable r) {
