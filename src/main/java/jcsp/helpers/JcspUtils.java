@@ -114,6 +114,44 @@ public class JcspUtils {
             }
 
         }    
+        
+        public static class DeadlockLoggingFunctionChannelClient<T, U> implements FCClient<T, U> {
+
+            private final FCClient<T, U> out;
+
+            public DeadlockLoggingFunctionChannelClient(FCClient<T, U> out) {
+                this.out = out;
+            }
+            
+            public void poison(int strength) {
+                out.poison(strength);
+            }
+
+            public U call(T object) {
+                return call(object, null);
+            }
+            
+            public U call(T object, String tag) {
+                DeadlockLogger.DeadlockTag tag0;
+                try {
+                    // TODO This may be kinda heavy.
+                    if (tag != null) {
+                        throw new RuntimeException("Deadlock detected! " + tag);
+                    } else {
+                        throw new RuntimeException("Deadlock detected!");
+                    }
+                } catch (Exception e) {
+                    tag0 = new DeadlockLogger.DeadlockTag(e);
+                }
+                DeadlockLogger.startOut.write(tag0);
+                try {
+                    return out.call(object);
+                } finally {
+                    DeadlockLogger.stopOut.write(tag0);
+                }
+            }
+        }
+        
     /**
      * Yeah, this is really weirdly nested. I know. Also, it's kindof a
      * singleton, but it's to be used specifically for debugging, so I'm less
@@ -272,6 +310,16 @@ public class JcspUtils {
         return new DeadlockLoggingChannelOutputInt(out);
     }
 
+    /**
+     * See {@link #logDeadlock(jcsp.lang.ChannelOutput)}
+     *
+     * @param out
+     * @return
+     */
+    public static <T, U> DeadlockLoggingFunctionChannelClient<T, U> logDeadlock(final FCClient<T, U> out) {
+        return new DeadlockLoggingFunctionChannelClient(out);
+    }
+    
     public static void logDeadlock(Runnable r) {
         DeadlockLogger.DeadlockTag tag;
         try {
@@ -310,7 +358,7 @@ public class JcspUtils {
      * @param <T>
      * @param out
      * @return
-     */
+     */ //TODO Figure out a way to retain the typing of `out`?  Not sure Java will allow it
     public static <T> ChannelOutput<T> antidote(final ChannelOutput<T> out) {
         return new AntidoteChannelOutput<T>(out);
     }

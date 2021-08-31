@@ -11,6 +11,6 @@ import jcsp.helpers.*;
  * 
  * @see jcsp.helpers.FunctionChannel
  */
-public abstract class AltingFCServer<T, U> extends Guard implements FCServer<T, U>
+public abstract class AltingFCServer<T, U> extends Guard implements FCServer<T, U>, Poisonable
 {
 }

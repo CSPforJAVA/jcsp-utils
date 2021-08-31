@@ -1,5 +1,7 @@
 package jcsp.helpers;
 
+import jcsp.lang.Poisonable;
+
 /**
  * 
  * @author erhannis
@@ -9,7 +11,7 @@ package jcsp.helpers;
  * 
  * @see jcsp.helpers.FunctionChannel
  */
-public interface FCClient<T, U>
+public interface FCClient<T, U> extends Poisonable
 {
    public U call(T t);
 }
