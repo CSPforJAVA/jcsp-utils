@@ -13,6 +13,8 @@ import jcsp.lang.AltingAntidoteChannelInput;
 import jcsp.lang.AltingAntidoteChannelInputInt;
 import jcsp.lang.AltingChannelInput;
 import jcsp.lang.AltingChannelInputInt;
+import jcsp.lang.AltingChannelOutput;
+import jcsp.lang.AltingChannelOutputInt;
 import jcsp.lang.AntidoteChannelInput;
 import jcsp.lang.AntidoteChannelInputInt;
 import jcsp.lang.AntidoteChannelOutput;
@@ -25,6 +27,8 @@ import jcsp.lang.ChannelInput;
 import jcsp.lang.ChannelInputInt;
 import jcsp.lang.ChannelOutput;
 import jcsp.lang.ChannelOutputInt;
+import jcsp.lang.DeadlockLoggingAltingChannelOutput;
+import jcsp.lang.DeadlockLoggingAltingChannelOutputInt;
 import jcsp.lang.DisableableTimer;
 import jcsp.lang.Guard;
 import jcsp.lang.PoisonException;
@@ -56,7 +60,7 @@ public class JcspUtils {
             }
             
             public void write(T object, String tag) {
-                DeadlockLogger.DeadlockTag tag0;
+                _DeadlockLogger.DeadlockTag tag0;
                 try {
                     // TODO This may be kinda heavy.
                     if (tag != null) {
@@ -65,13 +69,13 @@ public class JcspUtils {
                         throw new RuntimeException("Deadlock detected!");
                     }
                 } catch (Exception e) {
-                    tag0 = new DeadlockLogger.DeadlockTag(e);
+                    tag0 = new _DeadlockLogger.DeadlockTag(e);
                 }
-                DeadlockLogger.startOut.write(tag0);
+                _DeadlockLogger.startOut.write(tag0);
                 try {
                     out.write(object);
                 } finally {
-                    DeadlockLogger.stopOut.write(tag0);
+                    _DeadlockLogger.stopOut.write(tag0);
                 }
             }
 
@@ -94,7 +98,7 @@ public class JcspUtils {
             }
             
             public void write(int value, String tag) {
-                DeadlockLogger.DeadlockTag tag0;
+                _DeadlockLogger.DeadlockTag tag0;
                 try {
                     // TODO This may be kinda heavy.
                     if (tag != null) {
@@ -103,18 +107,18 @@ public class JcspUtils {
                         throw new RuntimeException("Deadlock detected!");
                     }
                 } catch (Exception e) {
-                    tag0 = new DeadlockLogger.DeadlockTag(e);
+                    tag0 = new _DeadlockLogger.DeadlockTag(e);
                 }
-                DeadlockLogger.startOut.write(tag0);
+                _DeadlockLogger.startOut.write(tag0);
                 try {
                     out.write(value);
                 } finally {
-                    DeadlockLogger.stopOut.write(tag0);
+                    _DeadlockLogger.stopOut.write(tag0);
                 }
             }
 
         }    
-        
+                
         public static class DeadlockLoggingFunctionChannelClient<T, U> implements FCClient<T, U> {
 
             private final FCClient<T, U> out;
@@ -132,7 +136,7 @@ public class JcspUtils {
             }
             
             public U call(T object, String tag) {
-                DeadlockLogger.DeadlockTag tag0;
+                _DeadlockLogger.DeadlockTag tag0;
                 try {
                     // TODO This may be kinda heavy.
                     if (tag != null) {
@@ -141,18 +145,21 @@ public class JcspUtils {
                         throw new RuntimeException("Deadlock detected!");
                     }
                 } catch (Exception e) {
-                    tag0 = new DeadlockLogger.DeadlockTag(e);
+                    tag0 = new _DeadlockLogger.DeadlockTag(e);
                 }
-                DeadlockLogger.startOut.write(tag0);
+                _DeadlockLogger.startOut.write(tag0);
                 try {
                     return out.call(object);
                 } finally {
-                    DeadlockLogger.stopOut.write(tag0);
+                    _DeadlockLogger.stopOut.write(tag0);
                 }
             }
         }
         
     /**
+     * For internal use.<br/>
+     * I'd rather this be private, but ALSO don't want to put it in jcsp.lang, blah blah blah....<br/>
+     * <br/>
      * Yeah, this is really weirdly nested. I know. Also, it's kindof a
      * singleton, but it's to be used specifically for debugging, so I'm less
      * inclined to be worried.
@@ -160,10 +167,10 @@ public class JcspUtils {
      * @author erhannis
      *
      */
-    private static class DeadlockLogger implements CSProcess {
+    public static class _DeadlockLogger implements CSProcess {
 
-        private static final ChannelOutput<DeadlockTag> startOut;
-        private static final ChannelOutput<DeadlockTag> stopOut;
+        public static final ChannelOutput<DeadlockTag> startOut;
+        public static final ChannelOutput<DeadlockTag> stopOut;
 
         static {
             Any2OneChannel<DeadlockTag> startChannel = Channel.<DeadlockTag>any2one();
@@ -174,10 +181,10 @@ public class JcspUtils {
             AltingChannelInput<DeadlockTag> stopIn = stopChannel.in();
             stopOut = stopChannel.out();
 
-            new ProcessManager(new DeadlockLogger(startIn, stopIn)).start();
+            new ProcessManager(new _DeadlockLogger(startIn, stopIn)).start();
         }
 
-        private static class DeadlockTag {
+        public static class DeadlockTag {
 
             public final Exception exception;
 
@@ -193,7 +200,7 @@ public class JcspUtils {
 
         private final HashMap<DeadlockTag, Long> times = new HashMap<DeadlockTag, Long>();
 
-        private DeadlockLogger(AltingChannelInput<DeadlockTag> startIn, AltingChannelInput<DeadlockTag> stopIn) {
+        private _DeadlockLogger(AltingChannelInput<DeadlockTag> startIn, AltingChannelInput<DeadlockTag> stopIn) {
             this.startIn = startIn;
             this.stopIn = stopIn;
         }
@@ -316,39 +323,59 @@ public class JcspUtils {
      * @param out
      * @return
      */
+    public static DeadlockLoggingAltingChannelOutput logDeadlockAlting(final AltingChannelOutput out) {
+        return new DeadlockLoggingAltingChannelOutput(out);
+    }
+
+    /**
+     * See {@link #logDeadlock(jcsp.lang.ChannelOutput)}
+     *
+     * @param out
+     * @return
+     */
+    public static DeadlockLoggingAltingChannelOutputInt logDeadlockAlting(final AltingChannelOutputInt out) {
+        return new DeadlockLoggingAltingChannelOutputInt(out);
+    }
+    
+    /**
+     * See {@link #logDeadlock(jcsp.lang.ChannelOutput)}
+     *
+     * @param out
+     * @return
+     */
     public static <T, U> DeadlockLoggingFunctionChannelClient<T, U> logDeadlock(final FCClient<T, U> out) {
         return new DeadlockLoggingFunctionChannelClient(out);
     }
     
     public static void logDeadlock(Runnable r) {
-        DeadlockLogger.DeadlockTag tag;
+        _DeadlockLogger.DeadlockTag tag;
         try {
             // TODO This may be kinda heavy.
             throw new RuntimeException("Deadlock detected!");
         } catch (Exception e) {
-            tag = new DeadlockLogger.DeadlockTag(e);
+            tag = new _DeadlockLogger.DeadlockTag(e);
         }
-        DeadlockLogger.startOut.write(tag);
+        _DeadlockLogger.startOut.write(tag);
         try {
             r.run();
         } finally {
-            DeadlockLogger.stopOut.write(tag);
+            _DeadlockLogger.stopOut.write(tag);
         }
     }
 
     public static <T> T logDeadlock(Supplier<T> r) {
-        DeadlockLogger.DeadlockTag tag;
+        _DeadlockLogger.DeadlockTag tag;
         try {
             // TODO This may be kinda heavy.
             throw new RuntimeException("Deadlock detected!");
         } catch (Exception e) {
-            tag = new DeadlockLogger.DeadlockTag(e);
+            tag = new _DeadlockLogger.DeadlockTag(e);
         }
-        DeadlockLogger.startOut.write(tag);
+        _DeadlockLogger.startOut.write(tag);
         try {
             return r.get();
         } finally {
-            DeadlockLogger.stopOut.write(tag);
+            _DeadlockLogger.stopOut.write(tag);
         }
     }
 
